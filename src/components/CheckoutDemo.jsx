@@ -6,15 +6,19 @@ import {
   Wallet,
   Check,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Zap
 } from 'lucide-react';
 import { usePaymentContext } from '../hooks/usePaymentContext';
+import NearIntentsPayment from './NearIntentsPayment';
 
 const CheckoutDemo = () => {
   const [step, setStep] = useState(1);
   const [selectedCurrency, setSelectedCurrency] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [showNearIntents, setShowNearIntents] = useState(false);
   
   const { createSession } = usePaymentContext();
 
@@ -86,8 +90,25 @@ const CheckoutDemo = () => {
   const resetDemo = () => {
     setStep(1);
     setSelectedCurrency('');
+    setSelectedPaymentMethod('');
     setPaymentComplete(false);
     setIsProcessing(false);
+    setShowNearIntents(false);
+  };
+
+  const handleNearIntentsSuccess = (details) => {
+    setPaymentComplete(true);
+    setStep(4);
+    setShowNearIntents(false);
+  };
+
+  const handleNearIntentsError = (error) => {
+    console.error('NEAR Intents payment failed:', error);
+    setShowNearIntents(false);
+  };
+
+  const handleNearIntentsCancel = () => {
+    setShowNearIntents(false);
   };
 
   return (
@@ -189,7 +210,31 @@ const CheckoutDemo = () => {
               
               <div className="space-y-3 mb-6">
                 <button 
-                  onClick={() => setStep(3)}
+                  onClick={() => {
+                    setSelectedPaymentMethod('near-intents');
+                    setShowNearIntents(true);
+                  }}
+                  className="w-full p-4 border-2 border-green-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all duration-200 relative overflow-hidden"
+                >
+                  <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                    NEW
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Pay with NEAR Intents</div>
+                      <div className="text-sm text-gray-600">Lightning-fast cross-chain payments (~3s)</div>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setSelectedPaymentMethod('crypto');
+                    setStep(3);
+                  }}
                   className="w-full p-4 border-2 border-primary-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all duration-200"
                 >
                   <div className="flex items-center space-x-4">
@@ -197,7 +242,7 @@ const CheckoutDemo = () => {
                       <Wallet className="w-6 h-6 text-primary-600" />
                     </div>
                     <div className="text-left">
-                      <div className="font-semibold text-gray-900">Pay with Crypto</div>
+                      <div className="font-semibold text-gray-900">Traditional Crypto</div>
                       <div className="text-sm text-gray-600">Bitcoin, Ethereum, and 50+ more</div>
                     </div>
                   </div>
@@ -335,6 +380,33 @@ const CheckoutDemo = () => {
             </motion.div>
           )}
         </div>
+
+        {/* NEAR Intents Payment Modal */}
+        {showNearIntents && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <NearIntentsPayment
+                  amount={product.price}
+                  currency="USD"
+                  onSuccess={handleNearIntentsSuccess}
+                  onError={handleNearIntentsError}
+                  onCancel={handleNearIntentsCancel}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
